@@ -12,7 +12,7 @@ from controllers.console.auth.error import (
     InvalidTokenError,
     PasswordMismatchError,
 )
-from controllers.console.error import EmailSendIpLimitError, NotAllowedCreateWorkspace, NotAllowedRegister
+from controllers.console.error import EmailSendIpLimitError, NotAllowedRegister
 from controllers.console.setup import setup_required
 from events.tenant_event import tenant_was_created
 from extensions.ext_database import db
@@ -20,8 +20,7 @@ from libs.helper import email, extract_remote_ip
 from libs.password import hash_password, valid_password
 from models.account import Account
 from services.account_service import AccountService, TenantService
-from services.errors.workspace import WorkSpaceNotAllowedCreateError
-from services.feature_service import SystemFeatureModel
+from services.feature_service import FeatureService
 
 
 class ForgotPasswordSendEmailApi(Resource):
@@ -44,7 +43,7 @@ class ForgotPasswordSendEmailApi(Resource):
         account = Account.query.filter_by(email=args["email"]).first()
         token = None
         if account is None:
-            if SystemFeatureModel.is_allow_register:
+            if FeatureService.system_features.is_allow_register:
                 token = AccountService.send_reset_password_email(email=args["email"], language=language)
             else:
                 raise NotAllowedRegister()
@@ -113,24 +112,18 @@ class ForgotPasswordResetApi(Resource):
             account.password_salt = base64_salt
             db.session.commit()
             tenant = TenantService.get_join_tenants(account)
-            if not tenant:
-                if not SystemFeatureModel.is_allow_create_workspace:
-                    raise NotAllowedCreateWorkspace()
-                else:
-                    tenant = TenantService.create_tenant(f"{account.name}'s Workspace")
-                    TenantService.create_tenant_member(tenant, account, role="owner")
-                    account.current_tenant = tenant
-                    tenant_was_created.send(tenant)
+            if not tenant and not FeatureService.system_features.is_allow_create_workspace:
+                tenant = TenantService.create_tenant(f"{account.name}'s Workspace")
+                TenantService.create_tenant_member(tenant, account, role="owner")
+                account.current_tenant = tenant
+                tenant_was_created.send(tenant)
         else:
-            try:
-                account = AccountService.create_account_and_tenant(
-                    email=reset_data.get("email"),
-                    name=reset_data.get("email"),
-                    password=password_confirm,
-                    interface_language=languages[0],
-                )
-            except WorkSpaceNotAllowedCreateError:
-                raise NotAllowedCreateWorkspace()
+            account = AccountService.create_account_and_tenant(
+                email=reset_data.get("email"),
+                name=reset_data.get("email"),
+                password=password_confirm,
+                interface_language=languages[0],
+            )
 
         token_pair = AccountService.login(account, ip_address=extract_remote_ip(request))
 
