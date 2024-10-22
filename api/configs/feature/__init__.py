@@ -562,6 +562,11 @@ class DataSetConfig(BaseSettings):
     )
 
 
+    TIDB_SERVERLESS_NUMBER: PositiveInt = Field(
+        description='number of tidb serverless cluster',
+        default=500,
+    )
+
 class WorkspaceConfig(BaseSettings):
     """
     Configuration for workspace management
