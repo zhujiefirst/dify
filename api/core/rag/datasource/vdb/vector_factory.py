@@ -9,6 +9,7 @@ from core.rag.datasource.vdb.vector_type import VectorType
 from core.rag.embedding.cached_embedding import CacheEmbedding
 from core.rag.embedding.embedding_base import Embeddings
 from core.rag.models.document import Document
+from extensions.ext_database import db
 from extensions.ext_redis import redis_client
 from models.dataset import Dataset, Whitelist
 
@@ -40,7 +41,11 @@ class Vector:
             vector_type = self._dataset.index_struct_dict["type"]
 
         if dify_config.VECTOR_STORE_WHITELIST_ENABLE:
-            whitelist = db.session.query(Whitelist).filter(Whitelist.tenant_id == self._dataset.tenant_id, Whitelist.type == "vector_db").one_or_none()
+            whitelist = (
+                db.session.query(Whitelist)
+                .filter(Whitelist.tenant_id == self._dataset.tenant_id, Whitelist.type == "vector_db")
+                .one_or_none()
+            )
             if whitelist:
                 vector_type = VectorType.TIDB_ON_QDRANT
 
@@ -119,6 +124,7 @@ class Vector:
                 return VikingDBVectorFactory
             case VectorType.TIDB_ON_QDRANT:
                 from core.rag.datasource.vdb.tidb_on_qdrant.tidb_on_qdrant_vector import TidbOnQdrantVectorFactory
+
                 return TidbOnQdrantVectorFactory
             case _:
                 raise ValueError(f"Vector store {vector_type} is not supported.")
