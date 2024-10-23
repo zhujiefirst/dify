@@ -619,6 +619,7 @@ class DatasetRetrievalSettingApi(Resource):
                 | VectorType.PGVECTO_RS
                 | VectorType.BAIDU
                 | VectorType.VIKINGDB
+                | VectorType.UPSTASH
             ):
                 return {"retrieval_method": [RetrievalMethod.SEMANTIC_SEARCH.value]}
             case (
@@ -658,6 +659,7 @@ class DatasetRetrievalSettingMockApi(Resource):
                 | VectorType.PGVECTO_RS
                 | VectorType.BAIDU
                 | VectorType.VIKINGDB
+                | VectorType.UPSTASH
             ):
                 return {"retrieval_method": [RetrievalMethod.SEMANTIC_SEARCH.value]}
             case (

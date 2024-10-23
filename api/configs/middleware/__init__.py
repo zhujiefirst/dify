@@ -29,6 +29,7 @@ from configs.middleware.vdb.relyt_config import RelytConfig
 from configs.middleware.vdb.tencent_vector_config import TencentVectorDBConfig
 from configs.middleware.vdb.tidb_on_qdrant_config import TidbOnQdrantConfig
 from configs.middleware.vdb.tidb_vector_config import TiDBVectorConfig
+from configs.middleware.vdb.upstash_config import UpstashConfig
 from configs.middleware.vdb.vikingdb_config import VikingDBConfig
 from configs.middleware.vdb.weaviate_config import WeaviateConfig
 
@@ -253,5 +254,6 @@ class MiddlewareConfig(
     InternalTestConfig,
     VikingDBConfig,
     TidbOnQdrantConfig,
+    UpstashConfig,
 ):
     pass
