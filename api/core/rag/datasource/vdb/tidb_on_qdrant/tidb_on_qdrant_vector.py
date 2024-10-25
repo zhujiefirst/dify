@@ -336,7 +336,7 @@ class TidbOnQdrantVector(BaseVector):
         for result in results:
             metadata = result.payload.get(Field.METADATA_KEY.value) or {}
             # duplicate check score threshold
-            score_threshold = kwargs.get("score_threshold", 0.0) if kwargs.get("score_threshold", 0.0) else 0.0
+            score_threshold = kwargs.get("score_threshold") or 0.0
             if result.score > score_threshold:
                 metadata["score"] = result.score
                 doc = Document(
@@ -405,7 +405,10 @@ class TidbOnQdrantVectorFactory(AbstractVectorFactory):
         )
         if not tidb_auth_binding:
             idle_tidb_auth_binding = (
-                db.session.query(TidbAuthBinding).filter(TidbAuthBinding.active == False).limit(1).one_or_none()
+                db.session.query(TidbAuthBinding)
+                .filter(TidbAuthBinding.active == False, TidbAuthBinding.status == "ACTIVE")
+                .limit(1)
+                .one_or_none()
             )
             if idle_tidb_auth_binding:
                 idle_tidb_auth_binding.active = True
@@ -438,6 +441,7 @@ class TidbOnQdrantVectorFactory(AbstractVectorFactory):
                             password=new_cluster["password"],
                             tenant_id=dataset.tenant_id,
                             active=True,
+                            status="ACTIVE",
                         )
                         db.session.add(new_tidb_auth_binding)
                         db.session.commit()

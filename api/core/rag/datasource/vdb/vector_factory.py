@@ -39,6 +39,15 @@ class Vector:
 
         if self._dataset.index_struct_dict:
             vector_type = self._dataset.index_struct_dict["type"]
+        else:
+            if dify_config.VECTOR_STORE_WHITELIST_ENABLE:
+                whitelist = (
+                    db.session.query(Whitelist)
+                    .filter(Whitelist.tenant_id == self._dataset.tenant_id, Whitelist.category == "vector_db")
+                    .one_or_none()
+                )
+                if whitelist:
+                    vector_type = VectorType.TIDB_ON_QDRANT
 
         if dify_config.VECTOR_STORE_WHITELIST_ENABLE:
             whitelist = (
@@ -130,6 +139,10 @@ class Vector:
                 from core.rag.datasource.vdb.upstash.upstash_vector import UpstashVectorFactory
 
                 return UpstashVectorFactory
+            case VectorType.TIDB_ON_QDRANT:
+                from core.rag.datasource.vdb.tidb_on_qdrant.tidb_on_qdrant_vector import TidbOnQdrantVectorFactory
+
+                return TidbOnQdrantVectorFactory
             case _:
                 raise ValueError(f"Vector store {vector_type} is not supported.")
 
