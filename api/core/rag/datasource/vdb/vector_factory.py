@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional
-from extensions.ext_database import db
+
 from configs import dify_config
 from core.model_manager import ModelManager
 from core.model_runtime.entities.model_entities import ModelType
