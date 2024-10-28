@@ -1,15 +1,13 @@
-import mimetypes
-import os
-import re
 import urllib.parse
 from typing import cast
-from uuid import uuid4
 
 from flask_login import current_user
 from flask_restful import Resource, marshal_with, reqparse
 
+from controllers.common import helpers
+from core.file import helpers as file_helpers
 from core.helper import ssrf_proxy
-from fields.file_fields import file_fields, remote_file_info_fields
+from fields.file_fields import file_fields_with_signed_url, remote_file_info_fields
 from models.account import Account
 from services.file_service import FileService
 
@@ -29,7 +27,7 @@ class RemoteFileInfoApi(Resource):
 
 
 class RemoteFileUploadApi(Resource):
-    @marshal_with(file_fields)
+    @marshal_with(file_fields_with_signed_url)
     def post(self):
         parser = reqparse.RequestParser()
         parser.add_argument("url", type=str, required=True, help="URL is required")
@@ -37,53 +35,36 @@ class RemoteFileUploadApi(Resource):
 
         url = args["url"]
 
-        try:
-            response = ssrf_proxy.get(url)
-            response.raise_for_status()
-            content = response.content
-        except Exception as e:
-            return {"error": str(e)}, 400
+        response = ssrf_proxy.head(url)
+        response.raise_for_status()
 
-        # Try to extract filename from URL
-        parsed_url = urllib.parse.urlparse(url)
-        url_path = parsed_url.path
-        filename = os.path.basename(url_path)
+        file_info = helpers.guess_file_info_from_response(response)
 
-        # If filename couldn't be extracted, use Content-Disposition header
-        if not filename:
-            content_disposition = response.headers.get("Content-Disposition")
-            if content_disposition:
-                filename_match = re.search(r'filename="?(.+)"?', content_disposition)
-                if filename_match:
-                    filename = filename_match.group(1)
+        if not FileService.is_file_size_within_limit(extension=file_info.extension, file_size=file_info.size):
+            return {"error": "File size exceeded"}, 400
 
-        # If still no filename, generate a unique one
-        if not filename:
-            unique_name = str(uuid4())
-            filename = f"{unique_name}"
-
-        # Guess MIME type from filename first, then URL
-        mimetype, _ = mimetypes.guess_type(filename)
-        if mimetype is None:
-            mimetype, _ = mimetypes.guess_type(url)
-        if mimetype is None:
-            # If guessing fails, use Content-Type from response headers
-            mimetype = response.headers.get("Content-Type", "application/octet-stream")
-
-        # Ensure filename has an extension
-        if not os.path.splitext(filename)[1]:
-            extension = mimetypes.guess_extension(mimetype) or ".bin"
-            filename = f"{filename}{extension}"
+        response = ssrf_proxy.get(url)
+        response.raise_for_status()
+        content = response.content
 
         try:
             user = cast(Account, current_user)
             upload_file = FileService.upload_file(
-                filename=filename,
+                filename=file_info.filename,
                 content=content,
-                mimetype=mimetype,
+                mimetype=file_info.mimetype,
                 user=user,
             )
         except Exception as e:
             return {"error": str(e)}, 400
 
-        return upload_file, 201
+        return {
+            "id": upload_file.id,
+            "name": upload_file.name,
+            "size": upload_file.size,
+            "extension": upload_file.extension,
+            "url": file_helpers.get_signed_file_url(upload_file_id=upload_file.id),
+            "mime_type": upload_file.mime_type,
+            "created_by": upload_file.created_by,
+            "created_at": upload_file.created_at,
+        }, 201
