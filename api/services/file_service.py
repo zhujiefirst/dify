@@ -37,10 +37,7 @@ class FileService:
         source: Literal["datasets"] | None = None,
         source_url: str = "",
     ) -> UploadFile:
-        # get file name
-        filename = file.filename
-        if not filename:
-            raise FileNotExistsError
+        # get file extension
         extension = filename.split(".")[-1].lower()
         if len(filename) > 200:
             filename = filename.split(".")[0][:200] + "." + extension
