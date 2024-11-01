@@ -6,6 +6,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Literal, Optional
 
+import sqlalchemy as sa
 from flask import request
 from flask_login import UserMixin
 from pydantic import BaseModel, Field
@@ -483,7 +484,7 @@ class RecommendedApp(db.Model):
     description = db.Column(db.JSON, nullable=False)
     copyright = db.Column(db.String(255), nullable=False)
     privacy_policy = db.Column(db.String(255), nullable=False)
-    custom_disclaimer = db.Column(db.String(255), nullable=True)
+    custom_disclaimer: Mapped[str] = mapped_column(sa.TEXT, default="")
     category = db.Column(db.String(255), nullable=False)
     position = db.Column(db.Integer, nullable=False, default=0)
     is_listed = db.Column(db.Boolean, nullable=False, default=True)
@@ -1306,7 +1307,7 @@ class Site(db.Model):
     privacy_policy = db.Column(db.String(255))
     show_workflow_steps = db.Column(db.Boolean, nullable=False, server_default=db.text("true"))
     use_icon_as_answer_icon = db.Column(db.Boolean, nullable=False, server_default=db.text("false"))
-    custom_disclaimer = db.Column(db.String(255), nullable=True)
+    custom_disclaimer: Mapped[str] = mapped_column(sa.TEXT, default="")
     customize_domain = db.Column(db.String(255))
     customize_token_strategy = db.Column(db.String(255), nullable=False)
     prompt_public = db.Column(db.Boolean, nullable=False, server_default=db.text("false"))
@@ -1384,7 +1385,7 @@ class UploadFile(db.Model):
     used_by: Mapped[str | None] = db.Column(StringUUID, nullable=True)
     used_at: Mapped[datetime | None] = db.Column(db.DateTime, nullable=True)
     hash: Mapped[str | None] = db.Column(db.String(255), nullable=True)
-    source_url: Mapped[str] = db.Column(db.String(255), nullable=False, server_default="")
+    source_url: Mapped[str] = mapped_column(sa.TEXT, default="")
 
     def __init__(
         self,
