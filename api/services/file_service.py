@@ -38,7 +38,7 @@ class FileService:
         source_url: str = "",
     ) -> UploadFile:
         # get file extension
-        extension = filename.split(".")[-1]
+        extension = filename.split(".")[-1].lower()
         if len(filename) > 200:
             filename = filename.split(".")[0][:200] + "." + extension
 
