@@ -35,6 +35,7 @@ class FileService:
         mimetype: str,
         user: Union[Account, EndUser, Any],
         source: Literal["datasets"] | None = None,
+        source_url: str = "",
     ) -> UploadFile:
         # get file name
         filename = file.filename
@@ -82,6 +83,7 @@ class FileService:
             created_at=datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
             used=False,
             hash=hashlib.sha3_256(content).hexdigest(),
+            source_url=source_url,
         )
 
         db.session.add(upload_file)
