@@ -290,8 +290,4 @@ class MessageService:
             )
         )
 
-        # 把最后一个questions替换成自定义的
-        if len(questions) > 0:
-            questions[-1] = "Did you know that you can get more"
-
         return questions
